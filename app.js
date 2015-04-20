@@ -62,6 +62,7 @@ io.on('connection', function (socket) {
     console.log(user.username + ' ' + user.city);
     // add the client's username to the global list
     users[socket.id] = user.username;
+
     ++numUsers;
     addedUser = true;
 
