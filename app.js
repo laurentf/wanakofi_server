@@ -27,6 +27,9 @@ var passport = require('passport')
   , FacebookStrategy = require('passport-facebook').Strategy
   , GoogleStrategy = require('passport-google').Strategy
   , TwitterStrategy = require('passport-twitter').Strategy;
+
+
+// facebook strat
   
 passport.use(new FacebookStrategy({
     clientID: '420707984735968',
@@ -37,6 +40,20 @@ passport.use(new FacebookStrategy({
 	 process.nextTick(function () {
 	   return done(null, profile);
 	 });
+  }
+));
+
+// twitter strat
+
+passport.use(new TwitterStrategy({
+    consumerKey: 'm5XmOVRuywipkNAL3I0OzD3nY',
+    consumerSecret: 'zmfRAKE4QCWFB5SEfx7jd3o8glZ6EiegoaKFuAyoeqQeYJj3MW',
+    callbackURL: "http://localhost:3000/auth/twitter/callback"
+  },
+  function(token, tokenSecret, profile, done) {
+    process.nextTick(function () {
+     return done(null, profile);
+    });
   }
 ));
 
@@ -69,6 +86,14 @@ app.get('/auth/facebook',
 // facebook callback
 app.get('/auth/facebook/callback', 
   passport.authenticate('facebook', { successRedirect: 'http://localhost/angular/#chat',
+                                      failureRedirect: 'http://localhost/angular/#login' }));
+
+// twitter login
+app.get('/auth/twitter', passport.authenticate('twitter'));
+
+// twitter callback
+app.get('/auth/twitter/callback', 
+  passport.authenticate('twitter', { successRedirect: 'http://localhost/angular/#chat',
                                       failureRedirect: 'http://localhost/angular/#login' }));
 					  
 // route to check if the user is logged 
