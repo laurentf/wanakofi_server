@@ -37,7 +37,7 @@ var passport = require('passport')
 passport.use(new FacebookStrategy({
     clientID: '420707984735968',
     clientSecret: '9aa123361b1172be15d736c712004466',
-    callbackURL: "http://localhost:3000/auth/facebook/callback"
+    callbackURL: "https://powerful-ridge-1197.herokuapp.com/auth/facebook/callback"
   },
   function(accessToken, refreshToken, profile, done) {
    process.nextTick(function () {
@@ -52,7 +52,7 @@ passport.use(new FacebookStrategy({
 passport.use(new TwitterStrategy({
     consumerKey: 'm5XmOVRuywipkNAL3I0OzD3nY',
     consumerSecret: 'zmfRAKE4QCWFB5SEfx7jd3o8glZ6EiegoaKFuAyoeqQeYJj3MW',
-    callbackURL: "http://localhost:3000/auth/twitter/callback"
+    callbackURL: "https://powerful-ridge-1197.herokuapp.com/auth/twitter/callback"
   },
   function(token, tokenSecret, profile, done) {
     process.nextTick(function () {
@@ -66,7 +66,7 @@ passport.use(new TwitterStrategy({
 passport.use(new GoogleStrategy({
     clientID:     '165456648509-3sqoq8n2icglhb7nhdhvt0di00ilh266.apps.googleusercontent.com',
     clientSecret: 'yiAJ-sAhnYL5eD5eEn_1N0y9',
-    callbackURL: "http://localhost:3000/auth/google/callback",
+    callbackURL: "https://powerful-ridge-1197.herokuapp.com/auth/google/callback",
     passReqToCallback   : true
   },
   function(request, accessToken, refreshToken, profile, done) {
@@ -110,16 +110,16 @@ app.get('/auth/facebook',
 
 // facebook callback
 app.get('/auth/facebook/callback', 
-  passport.authenticate('facebook', { successRedirect: 'http://localhost/angular/#chat',
-                                      failureRedirect: 'http://localhost/angular/#login' }));
+  passport.authenticate('facebook', { successRedirect: 'https://vast-headland-2092.herokuapp.com/#chat',
+                                      failureRedirect: 'https://vast-headland-2092.herokuapp.com/#login' }));
 
 // twitter login
 app.get('/auth/twitter', passport.authenticate('twitter'));
 
 // twitter callback
 app.get('/auth/twitter/callback', 
-  passport.authenticate('twitter', { successRedirect: 'http://localhost/angular/#chat',
-                                      failureRedirect: 'http://localhost/angular/#login' }));
+  passport.authenticate('twitter', { successRedirect: 'https://vast-headland-2092.herokuapp.com/#chat',
+                                      failureRedirect: 'https://vast-headland-2092.herokuapp.com/#login' }));
 
 // google login
 app.get('/auth/google', 
@@ -127,14 +127,14 @@ app.get('/auth/google',
 
 // google callback
 app.get('/auth/google/callback', 
-  passport.authenticate('google', { successRedirect: 'http://localhost/angular/#chat',
-                                    failureRedirect: 'http://localhost/angular/#login' }));
+  passport.authenticate('google', { successRedirect: 'https://vast-headland-2092.herokuapp.com/#chat',
+                                    failureRedirect: 'https://vast-headland-2092.herokuapp.com/#login' }));
             
 // route to check if the user is logged 
 app.get('/loggedin', function(req, res) { 
   // Allow cross domain http request (only GET)
   res.set({
-    'Access-Control-Allow-Origin': 'http://localhost',
+    'Access-Control-Allow-Origin': 'https://vast-headland-2092.herokuapp.com',
     'Access-Control-Allow-Credentials': true,
     'Access-Control-Allow-Methods': 'GET'
   });
@@ -144,7 +144,7 @@ app.get('/loggedin', function(req, res) {
 // route to log out 
 app.get('/logout', function(req, res){ 
   res.set({
-      'Access-Control-Allow-Origin': 'http://localhost',
+      'Access-Control-Allow-Origin': 'https://vast-headland-2092.herokuapp.com',
       'Access-Control-Allow-Credentials': true,
       'Access-Control-Allow-Methods': 'GET'
   });
