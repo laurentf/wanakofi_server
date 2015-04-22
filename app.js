@@ -5,7 +5,7 @@ var server = require('http').Server(app);
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var io = require('socket.io')(server);
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || 80;
 
 // mongodb models
 var mongoose = require('mongoose');
@@ -34,7 +34,7 @@ var passport = require('passport')
 passport.use(new FacebookStrategy({
     clientID: '420707984735968',
     clientSecret: '9aa123361b1172be15d736c712004466',
-    callbackURL: "http://localhost:3000/auth/facebook/callback"
+    callbackURL: "http://localhost/auth/facebook/callback"
   },
 	function(accessToken, refreshToken, profile, done) {
 	 process.nextTick(function () {
@@ -48,7 +48,7 @@ passport.use(new FacebookStrategy({
 passport.use(new TwitterStrategy({
     consumerKey: 'm5XmOVRuywipkNAL3I0OzD3nY',
     consumerSecret: 'zmfRAKE4QCWFB5SEfx7jd3o8glZ6EiegoaKFuAyoeqQeYJj3MW',
-    callbackURL: "http://localhost:3000/auth/twitter/callback"
+    callbackURL: "http://localhost/auth/twitter/callback"
   },
   function(token, tokenSecret, profile, done) {
     process.nextTick(function () {
