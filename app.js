@@ -1,17 +1,18 @@
-// Setup basic express server
+///////////////////////////// BASIC SETUP /////////////////////
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var io = require('socket.io')(server);
-var port = process.env.PORT || 80;
+var port = process.env.PORT || 3000;
+var morgan = require('morgan');
+var moment = require('moment');
+//var mongoose = require('mongoose');
+///////////////////////////////////////////////////////////////
 
-// mongodb models
-var mongoose = require('mongoose');
-// morgan logger
-var morgan = require('morgan')
 
+///////////////////////////// APP CONF ////////////////////////
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -20,35 +21,38 @@ app.use(require('express-session')({
     resave: false,
     saveUninitialized: false
 }));
-
 app.use(morgan('dev'));
+///////////////////////////////////////////////////////////////
 
+
+///////////////////////////// PASSPORT INIT ///////////////////
 var passport = require('passport')
   , FacebookStrategy = require('passport-facebook').Strategy
-  , GoogleStrategy = require('passport-google').Strategy
+  , GoogleStrategy = require('passport-google-oauth2').Strategy
   , TwitterStrategy = require('passport-twitter').Strategy;
+///////////////////////////////////////////////////////////////
 
 
-// facebook strat
-  
+///////////////////////////// FB STRATEGY ///////////////////// 
 passport.use(new FacebookStrategy({
     clientID: '420707984735968',
     clientSecret: '9aa123361b1172be15d736c712004466',
-    callbackURL: "http://localhost/auth/facebook/callback"
+    callbackURL: "http://localhost:3000/auth/facebook/callback"
   },
-	function(accessToken, refreshToken, profile, done) {
-	 process.nextTick(function () {
-	   return done(null, profile);
-	 });
+  function(accessToken, refreshToken, profile, done) {
+   process.nextTick(function () {
+     return done(null, profile);
+   });
   }
 ));
+///////////////////////////////////////////////////////////////
 
-// twitter strat
 
+///////////////////////////// TW STRATEGY ///////////////////// 
 passport.use(new TwitterStrategy({
     consumerKey: 'm5XmOVRuywipkNAL3I0OzD3nY',
     consumerSecret: 'zmfRAKE4QCWFB5SEfx7jd3o8glZ6EiegoaKFuAyoeqQeYJj3MW',
-    callbackURL: "http://localhost/auth/twitter/callback"
+    callbackURL: "http://localhost:3000/auth/twitter/callback"
   },
   function(token, tokenSecret, profile, done) {
     process.nextTick(function () {
@@ -56,7 +60,24 @@ passport.use(new TwitterStrategy({
     });
   }
 ));
+///////////////////////////////////////////////////////////////
 
+///////////////////////////// GP STRATEGY ///////////////////// 
+passport.use(new GoogleStrategy({
+    clientID:     '165456648509-3sqoq8n2icglhb7nhdhvt0di00ilh266.apps.googleusercontent.com',
+    clientSecret: 'yiAJ-sAhnYL5eD5eEn_1N0y9',
+    callbackURL: "http://localhost:3000/auth/google/callback",
+    passReqToCallback   : true
+  },
+  function(request, accessToken, refreshToken, profile, done) {
+    process.nextTick(function () {
+     return done(null, profile);
+    });
+  }
+));
+///////////////////////////////////////////////////////////////
+
+///////////////////////////// PASSPORT CONF ///////////////////
 passport.serializeUser(function(user, done) {
   done(null, user);
 });
@@ -71,17 +92,21 @@ app.use(passport.session());
 server.listen(port, function () {
   console.log('Server listening at port %d', port);
 });
+///////////////////////////////////////////////////////////////
 
-// define a middleware function to be used for every secured routes 
+
+
+///////////////////////////// AUTH MIDDLEWARE /////////////////
 var auth = function(req, res, next){ 
-	if (!req.isAuthenticated()) res.send(401); else next();};
+  if (!req.isAuthenticated()) res.send(401); else next();
+};
+///////////////////////////////////////////////////////////////
 
-// route to log in 
 
+///////////////////////////// ROUTES //////////////////////////
 // facebook login
 app.get('/auth/facebook',
-  passport.authenticate('facebook', { scope: ['public_profile', 'email', 'user_friends'] })
-);
+  passport.authenticate('facebook', { scope: ['public_profile', 'email', 'user_friends'] }));
 
 // facebook callback
 app.get('/auth/facebook/callback', 
@@ -95,52 +120,61 @@ app.get('/auth/twitter', passport.authenticate('twitter'));
 app.get('/auth/twitter/callback', 
   passport.authenticate('twitter', { successRedirect: 'http://localhost/angular/#chat',
                                       failureRedirect: 'http://localhost/angular/#login' }));
-					  
+
+// google login
+app.get('/auth/google', 
+  passport.authenticate('google', { scope: [ 'https://www.googleapis.com/auth/plus.login' ] }));
+
+// google callback
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { successRedirect: 'http://localhost/angular/#chat',
+                                    failureRedirect: 'http://localhost/angular/#login' }));
+            
 // route to check if the user is logged 
 app.get('/loggedin', function(req, res) { 
-		// Allow cross domain http request (only GET)
-		res.set({
-		  'Access-Control-Allow-Origin': 'http://localhost',
-		  'Access-Control-Allow-Credentials': true,
-		  'Access-Control-Allow-Methods': 'GET'
-		});
-		res.send(req.isAuthenticated() ? req.user : '0'); 
+  // Allow cross domain http request (only GET)
+  res.set({
+    'Access-Control-Allow-Origin': 'http://localhost',
+    'Access-Control-Allow-Credentials': true,
+    'Access-Control-Allow-Methods': 'GET'
+  });
+  res.send(req.isAuthenticated() ? req.user : '0'); 
 });
-	
+  
 // route to log out 
 app.get('/logout', function(req, res){ 
-	res.set({
-		  'Access-Control-Allow-Origin': 'http://localhost',
-		  'Access-Control-Allow-Credentials': true,
-		  'Access-Control-Allow-Methods': 'GET'
-	});
-	req.logOut(); 
-	res.send(200); 
+  res.set({
+      'Access-Control-Allow-Origin': 'http://localhost',
+      'Access-Control-Allow-Credentials': true,
+      'Access-Control-Allow-Methods': 'GET'
+  });
+  req.logOut(); 
+  res.send(200); 
 }); 
-		
-		
-// CHATROOM
-
-// usernames which are currently connected to the chat
-var users = [];
-var numUsers = [];
+///////////////////////////////////////////////////////////////   
+  
+///////////////////////////// SOCKETS /////////////////////////
+var users = []; // users which are currently connected to the chat grouped by city
+var ids = {}; // store provider-id combinations in order to know if a new socket is already connected (if yes we don't want to create a new socket)
+var numUsers = []; // nb users grouped by city
 
 io.on('connection', function (socket) {
   var addedUser = false;
   console.log('new connection');
-
+  
   // NEW MESSAGE FROM USER
   socket.on('NEW_MESSAGE', function (data) {
-    // we tell the client to execute 'new message'
-	console.log('will send message ' + data.message + ' from ' + socket.username + ' in ' + socket.city);
+  console.log('will send message ' + data.message + ' from ' + socket.username + ' in ' + socket.city);
 
     io.sockets.in(socket.city).emit('NEW_MESSAGE', {
+    id: socket.userId,
+    provider : socket.provider,
       username: socket.username,
       avatar : socket.avatar,
       message: data.message,
       moment: data.moment
     });
-	
+  
   });
 
   // NEW USER
@@ -149,6 +183,12 @@ io.on('connection', function (socket) {
     socket.username = user.username;
     socket.city = user.city;
     socket.avatar = user.avatar;
+  socket.provider = user.provider;
+  socket.userId = user.id;
+  
+  // associate the real socket id in order to retrieve it if needed
+  ids[user.provider + user.id] = socket.id; 
+  
     console.log(user.username + ' ' + user.city + ' ' + user.avatar);
 
     // add the client's username to the global list
@@ -174,11 +214,12 @@ io.on('connection', function (socket) {
 
     // echo globally (all clients) that a person has connected
     socket.broadcast.in(socket.city).emit('NEW_USER', {
-      id : socket.id,
-      username: socket.username,
-      city : socket.city,
-      avatar : socket.avatar,
-      numUsers: numUsers[socket.city]
+    id : socket.userId,
+    provider: socket.provider,
+    username: socket.username,
+    city : socket.city,
+    avatar : socket.avatar,
+    numUsers: numUsers[socket.city]
     });
   });
 
@@ -198,9 +239,12 @@ io.on('connection', function (socket) {
 
   // USER LEFT
   socket.on('disconnect', function () {
-    // remove the username from global usernames list
+    // remove the username from global users list
     if (addedUser) {
+  
       delete users[socket.city][socket.id];
+    delete ids[socket.provider + socket.userId];
+    
       numUsers[socket.city] = numUsers[socket.city]-1;
 
       // echo globally that this client has left
@@ -212,4 +256,7 @@ io.on('connection', function (socket) {
       });
     }
   });
+  
 });
+
+/////////////////////////////////////////////////////////////// 
