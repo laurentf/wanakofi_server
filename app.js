@@ -132,7 +132,7 @@ io.on('connection', function (socket) {
   // NEW MESSAGE FROM USER
   socket.on('NEW_MESSAGE', function (data) {
     // we tell the client to execute 'new message'
-	console.log('will send message ' + data + ' from ' + socket.username);
+	console.log('will send message ' + data.message + ' from ' + socket.username + ' in ' + socket.city);
 
     io.sockets.in(socket.city).emit('NEW_MESSAGE', {
       username: socket.username,
