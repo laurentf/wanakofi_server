@@ -112,7 +112,7 @@ app.get('/auth/facebook',
 
 // facebook callback
 app.get('/auth/facebook/callback', 
-  passport.authenticate('facebook', { successRedirect: clientHost + '/#chat',
+  passport.authenticate('facebook', { successRedirect: clientHost + '/#lobby',
                                       failureRedirect: clientHost + '/#login' }));
 
 // twitter login
@@ -120,7 +120,7 @@ app.get('/auth/twitter', passport.authenticate('twitter'));
 
 // twitter callback
 app.get('/auth/twitter/callback', 
-  passport.authenticate('twitter', { successRedirect: clientHost + '/#chat',
+  passport.authenticate('twitter', { successRedirect: clientHost + '/#lobby',
                                       failureRedirect: clientHost + '/#login' }));
 
 // google login
@@ -129,7 +129,7 @@ app.get('/auth/google',
 
 // google callback
 app.get('/auth/google/callback', 
-  passport.authenticate('google', { successRedirect: clientHost + '/#chat',
+  passport.authenticate('google', { successRedirect: clientHost + '/#lobby',
                                     failureRedirect: clientHost + '/#login' }));
             
 // route to check if the user is logged 
@@ -157,9 +157,9 @@ app.get('/logout', function(req, res){
 ///////////////////////////////////////////////////////////////   
   
 ///////////////////////////// SOCKETS /////////////////////////
-var users = []; // users which are currently connected to the chat grouped by city
+var users = []; // users which are currently connected to the chat grouped by room
 var ids = {}; // store provider-id combinations in order to know if a new socket is already connected (if yes we don't want to create a new socket)
-var numUsers = []; // nb users grouped by city
+var numUsers = []; // nb users grouped by room
 
 io.on('connection', function (socket) {
   var addedUser = false;
@@ -182,9 +182,9 @@ io.on('connection', function (socket) {
 
   // NEW USER
   socket.on('NEW_USER', function (user) {
-    // we store the username and city in the socket session for this client
+    // we store the username and room in the socket session for this client
     socket.username = user.username;
-    socket.city = user.city;
+    socket.room = user.room;
     socket.avatar = user.avatar;
   socket.provider = user.provider;
   socket.userId = user.id;
@@ -192,50 +192,50 @@ io.on('connection', function (socket) {
   // associate the real socket id in order to retrieve it if needed
   ids[user.provider + user.id] = socket.id; 
   
-    console.log(user.username + ' ' + user.city + ' ' + user.avatar);
+    console.log(user.username + ' ' + user.room + ' ' + user.avatar);
 
     // add the client's username to the global list
-    if(typeof users[socket.city] == 'undefined'){
-      users[socket.city] = [];
+    if(typeof users[socket.room] == 'undefined'){
+      users[socket.room] = [];
     }
-    users[socket.city][socket.id] = user;
+    users[socket.room][socket.id] = user;
 
-    // join the room of your city
-    socket.join(socket.city);
-    console.log(socket.username + ' join ' + socket.city);
+    // join the room 
+    socket.join(socket.room);
+    console.log(socket.username + ' join ' + socket.room);
 
-    if(typeof numUsers[socket.city] == 'undefined'){
-        numUsers[socket.city] = 0;
+    if(typeof numUsers[socket.room] == 'undefined'){
+        numUsers[socket.room] = 0;
     }
-    numUsers[socket.city] = numUsers[socket.city]+1;
+    numUsers[socket.room] = numUsers[socket.room]+1;
     addedUser = true;
 
     // LOGIN
     socket.emit('LOGIN', {
-       numUsers: numUsers[socket.city]
+       numUsers: numUsers[socket.room]
     });
 
     // echo globally (all clients) that a person has connected
-    socket.broadcast.in(socket.city).emit('NEW_USER', {
+    socket.broadcast.in(socket.room).emit('NEW_USER', {
     id : socket.userId,
     provider: socket.provider,
     username: socket.username,
-    city : socket.city,
+    room : socket.room,
     avatar : socket.avatar,
-    numUsers: numUsers[socket.city]
+    numUsers: numUsers[socket.room]
     });
   });
 
   // USER IS TYPING
   socket.on('TYPING', function () {
-    socket.broadcast.in(socket.city).emit('TYPING', {
+    socket.broadcast.in(socket.room).emit('TYPING', {
       username: socket.username
     });
   });
 
   // USER STOP TYPING
   socket.on('STOP_TYPING', function () {
-    socket.broadcast.in(socket.city).emit('STOP_TYPING', {
+    socket.broadcast.in(socket.room).emit('STOP_TYPING', {
       username: socket.username
     });
   });
@@ -245,17 +245,17 @@ io.on('connection', function (socket) {
     // remove the username from global users list
     if (addedUser) {
   
-      delete users[socket.city][socket.id];
+      delete users[socket.room][socket.id];
     delete ids[socket.provider + socket.userId];
     
-      numUsers[socket.city] = numUsers[socket.city]-1;
+      numUsers[socket.room] = numUsers[socket.room]-1;
 
       // echo globally that this client has left
-      socket.broadcast.in(socket.city).emit('USER_LEFT', {
+      socket.broadcast.in(socket.room).emit('USER_LEFT', {
         username: socket.username,
-        city : socket.city,
+        room : socket.room,
         avatar : socket.avatar,
-        numUsers: numUsers[socket.city]
+        numUsers: numUsers[socket.room]
       });
     }
   });
