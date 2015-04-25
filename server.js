@@ -167,9 +167,9 @@ io.on('connection', function (socket) {
   
   // NEW MESSAGE FROM USER
   socket.on('NEW_MESSAGE', function (data) {
-  console.log('will send message ' + data.message + ' from ' + socket.username + ' in ' + socket.city);
+  console.log('will send message ' + data.message + ' from ' + socket.username + ' in ' + socket.rooom);
 
-    io.sockets.in(socket.city).emit('NEW_MESSAGE', {
+    io.sockets.in(socket.rooom).emit('NEW_MESSAGE', {
     id: socket.userId,
     provider : socket.provider,
       username: socket.username,
@@ -184,10 +184,10 @@ io.on('connection', function (socket) {
   socket.on('NEW_USER', function (user) {
     // we store the username and room in the socket session for this client
     socket.username = user.username;
-    socket.room = user.room;
+    socket.rooom = user.room;
     socket.avatar = user.avatar;
-  socket.provider = user.provider;
-  socket.userId = user.id;
+    socket.provider = user.provider;
+    socket.userId = user.id;
   
   // associate the real socket id in order to retrieve it if needed
   ids[user.provider + user.id] = socket.id; 
@@ -195,47 +195,47 @@ io.on('connection', function (socket) {
     console.log(user.username + ' ' + user.room + ' ' + user.avatar);
 
     // add the client's username to the global list
-    if(typeof users[socket.room] == 'undefined'){
-      users[socket.room] = [];
+    if(typeof users[socket.rooom] == 'undefined'){
+      users[socket.rooom] = [];
     }
-    users[socket.room][socket.id] = user;
+    users[socket.rooom][socket.id] = user;
 
     // join the room 
-    socket.join(socket.room);
-    console.log(socket.username + ' join ' + socket.room);
+    socket.join(socket.rooom);
+    console.log(socket.username + ' join ' + socket.rooom);
 
-    if(typeof numUsers[socket.room] == 'undefined'){
-        numUsers[socket.room] = 0;
+    if(typeof numUsers[socket.rooom] == 'undefined'){
+        numUsers[socket.rooom] = 0;
     }
-    numUsers[socket.room] = numUsers[socket.room]+1;
+    numUsers[socket.rooom] = numUsers[socket.rooom]+1;
     addedUser = true;
 
     // LOGIN
     socket.emit('LOGIN', {
-       numUsers: numUsers[socket.room]
+       numUsers: numUsers[socket.rooom]
     });
 
     // echo globally (all clients) that a person has connected
-    socket.broadcast.in(socket.room).emit('NEW_USER', {
+    socket.broadcast.in(socket.rooom).emit('NEW_USER', {
     id : socket.userId,
     provider: socket.provider,
     username: socket.username,
-    room : socket.room,
+    room : socket.rooom,
     avatar : socket.avatar,
-    numUsers: numUsers[socket.room]
+    numUsers: numUsers[socket.rooom]
     });
   });
 
   // USER IS TYPING
   socket.on('TYPING', function () {
-    socket.broadcast.in(socket.room).emit('TYPING', {
+    socket.broadcast.in(socket.rooom).emit('TYPING', {
       username: socket.username
     });
   });
 
   // USER STOP TYPING
   socket.on('STOP_TYPING', function () {
-    socket.broadcast.in(socket.room).emit('STOP_TYPING', {
+    socket.broadcast.in(socket.rooom).emit('STOP_TYPING', {
       username: socket.username
     });
   });
@@ -245,17 +245,17 @@ io.on('connection', function (socket) {
     // remove the username from global users list
     if (addedUser) {
   
-      delete users[socket.room][socket.id];
+      delete users[socket.rooom][socket.id];
     delete ids[socket.provider + socket.userId];
     
-      numUsers[socket.room] = numUsers[socket.room]-1;
+      numUsers[socket.rooom] = numUsers[socket.rooom]-1;
 
       // echo globally that this client has left
-      socket.broadcast.in(socket.room).emit('USER_LEFT', {
+      socket.broadcast.in(socket.rooom).emit('USER_LEFT', {
         username: socket.username,
-        room : socket.room,
+        room : socket.rooom,
         avatar : socket.avatar,
-        numUsers: numUsers[socket.room]
+        numUsers: numUsers[socket.rooom]
       });
     }
   });
