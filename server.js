@@ -224,6 +224,7 @@ io.on('connection', function (socket) {
     avatar : socket.avatar,
     numUsers: numUsers[socket.rooom]
     });
+
   });
 
   // USER IS TYPING
@@ -245,7 +246,7 @@ io.on('connection', function (socket) {
     // remove the username from global users list
     if (addedUser) {
   
-      delete users[socket.rooom][socket.id];
+    delete users[socket.rooom][socket.id];
     delete ids[socket.provider + socket.userId];
     
       numUsers[socket.rooom] = numUsers[socket.rooom]-1;
